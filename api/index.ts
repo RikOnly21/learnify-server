@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { handle } from "hono/vercel";
+import { handle } from "@hono/node-server/vercel";
 
 import { createClerkClient } from "@clerk/backend";
 
@@ -14,7 +14,9 @@ type Env = {
 };
 
 export const config = {
-	runtime: "edge",
+	api: {
+		bodyParser: false,
+	},
 };
 
 const app = new Hono<Env>().basePath("/api");
