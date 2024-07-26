@@ -6,7 +6,7 @@ import { createClerkClient } from "@clerk/backend";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
-import { prisma } from "./db";
+import { prisma } from "../src/db/db";
 type Env = {
 	Variables: {
 		userId: string | undefined;
