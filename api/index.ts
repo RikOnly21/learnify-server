@@ -1,10 +1,11 @@
-import { Hono } from "hono";
 import { handle } from "@hono/node-server/vercel";
+import { Hono } from "hono";
 
 import { createClerkClient } from "@clerk/backend";
 
+import { z } from "zod";
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateText } from "ai";
+import { generateObject, generateText } from "ai";
 
 import { PrismaClient } from "@prisma/client";
 
@@ -62,8 +63,8 @@ app.post("/user/messages/create", async (c) => {
 	const messages = (await c.req.json()) as { content: string; role: "user" | "assistant" }[];
 
 	const openai = createOpenAI({
-		apiKey: "8d2bcf76-25d6-455b-bd7f-03eebe4848cb",
-		baseURL: "https://guujiyae.me/proxy/openai",
+		apiKey: process.env.API_KEY,
+		baseURL: process.env.API_URL,
 	});
 
 	const { text } = await generateText({
@@ -80,6 +81,28 @@ app.post("/user/messages/create", async (c) => {
 	});
 
 	return c.json({ message: text });
+});
+
+app.post("/user/questions/ask", async (c) => {
+	const userId = c.var.userId!;
+	const { question } = (await c.req.json()) as { question: string };
+
+	const openai = createOpenAI({
+		apiKey: process.env.API_KEY,
+		baseURL: process.env.API_URL,
+	});
+
+	const { object } = await generateObject({
+		model: openai("gpt-4o"),
+		prompt: question,
+		schema: z.object({
+			quesion: z.string(),
+			answers: z.string().array(),
+			correctAnswer: z.string(),
+		}),
+	});
+
+	return c.json({ answer: object.correctAnswer });
 });
 
 export default handle(app);
