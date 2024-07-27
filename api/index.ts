@@ -102,7 +102,7 @@ app.post("/user/questions/ask", async (c) => {
 		}),
 	});
 
-	return c.json({ answer: object.correctAnswer });
+	return c.json(object);
 });
 
 export default handle(app);
