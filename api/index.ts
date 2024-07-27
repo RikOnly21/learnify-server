@@ -95,6 +95,9 @@ app.post("/user/questions/ask", async (c) => {
 	const { object } = await generateObject({
 		model: openai("gpt-4o"),
 		prompt: question,
+		temperature: 0.8,
+		presencePenalty: 0.02,
+		frequencyPenalty: 0.02,
 		schema: z.object({
 			question: z.string(),
 			options: z.string().array(),
