@@ -96,9 +96,9 @@ app.post("/user/questions/ask", async (c) => {
 		model: openai("gpt-4o"),
 		prompt: question,
 		schema: z.object({
-			quesion: z.string(),
-			answers: z.string().array(),
-			correctAnswer: z.string(),
+			question: z.string(),
+			options: z.string().array(),
+			answer: z.string(),
 		}),
 	});
 
