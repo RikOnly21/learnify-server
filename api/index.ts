@@ -98,11 +98,13 @@ app.post("/user/questions/ask", async (c) => {
 		temperature: 0.8,
 		presencePenalty: 0.02,
 		frequencyPenalty: 0.02,
-		schema: z.object({
-			question: z.string(),
-			options: z.string().array(),
-			answer: z.string(),
-		}),
+		schema: z
+			.object({
+				question: z.string(),
+				options: z.string().array(),
+				answer: z.string(),
+			})
+			.array(),
 	});
 
 	return c.json(object);
