@@ -144,9 +144,17 @@ app.post("/user/questions/start", async (c) => {
 
 app.post("/user/questions/end", async (c) => {
 	const userId = c.var.userId!;
-	const { questionId, point } = (await c.req.json()) as { questionId: string; point: number };
+	const { questionId, point, startDate, endDate } = (await c.req.json()) as {
+		questionId: string;
+		point: number;
+		startDate: number;
+		endDate: number;
+	};
 
-	const data = await prisma.rank.update({ where: { id: questionId, userId }, data: { endAt: new Date() } });
+	const data = await prisma.rank.update({
+		where: { id: questionId, userId },
+		data: { endAt: new Date(endDate), startAt: new Date(startDate) },
+	});
 
 	const start = data.startAt.getTime();
 	const end = data.endAt!.getTime();
