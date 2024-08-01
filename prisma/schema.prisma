@@ -28,10 +28,10 @@ model Message {
 }
 
 model Rank {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   userId     String
   subject    String
   difficulty String
-  startAt    DateTime
-  endAt      DateTime
+  startAt    DateTime?
+  endAt      DateTime?
 }
