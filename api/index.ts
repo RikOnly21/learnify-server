@@ -58,6 +58,23 @@ app.get("/user/messages", async (c) => {
 	return c.json({ user, messages });
 });
 
+app.post("/user/voice", async (c) => {
+	const userId = c.var.userId!;
+	const messages = (await c.req.json()) as { content: string; role: "user" | "assistant" }[];
+
+	const openai = createOpenAI({
+		apiKey: process.env.API_KEY,
+		baseURL: process.env.API_URL,
+	});
+
+	const { text } = await generateText({
+		model: openai("gpt-4o"),
+		messages,
+	});
+
+	return c.json({ message: text });
+});
+
 app.post("/user/messages/create", async (c) => {
 	const userId = c.var.userId!;
 	const messages = (await c.req.json()) as { content: string; role: "user" | "assistant" }[];
@@ -69,7 +86,7 @@ app.post("/user/messages/create", async (c) => {
 
 	const { text } = await generateText({
 		model: openai("gpt-4o"),
-		messages: messages,
+		messages,
 	});
 
 	const userMessage = messages.pop()!;
