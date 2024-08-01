@@ -26,3 +26,12 @@ model Message {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
 }
+
+model Rank {
+  id         String    @id @default(uuid())
+  userId     String
+  subject    String
+  difficulty String
+  startAt    DateTime  @default(now())
+  endAt      DateTime?
+}

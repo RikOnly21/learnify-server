@@ -1,6 +1,8 @@
 import { handle } from "@hono/node-server/vercel";
 import { Hono } from "hono";
 
+import { waitUntil } from "@vercel/functions";
+
 import { createClerkClient } from "@clerk/backend";
 
 import { z } from "zod";
@@ -100,9 +102,10 @@ app.post("/user/messages/create", async (c) => {
 	return c.json({ message: text });
 });
 
-app.post("/user/questions/ask", async (c) => {
+app.post("/user/questions/start", async (c) => {
 	const userId = c.var.userId!;
-	const { question } = (await c.req.json()) as { question: string };
+	const { difficulty, subject } = (await c.req.json()) as { difficulty: string; subject: string };
+	const question = `Give me 10 questions about ${subject}, all questions must be unique and the level should be ${difficulty}`;
 
 	const openai = createOpenAI({
 		apiKey: process.env.API_KEY,
@@ -126,7 +129,17 @@ app.post("/user/questions/ask", async (c) => {
 		}),
 	});
 
-	return c.json(object);
+	const data = await prisma.rank.create({ data: { difficulty, subject, userId } });
+	return c.json({ ...object, questionId: data.id });
+});
+
+app.post("/user/questions/end", async (c) => {
+	const userId = c.var.userId!;
+	const { questionId } = (await c.req.json()) as { questionId: string };
+
+	await prisma.rank.update({ where: { id: questionId, userId }, data: { endAt: new Date() } });
+
+	return c.json({ message: "success" });
 });
 
 export default handle(app);
