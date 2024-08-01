@@ -104,8 +104,17 @@ app.post("/user/messages/create", async (c) => {
 
 app.post("/user/questions/start", async (c) => {
 	const userId = c.var.userId!;
-	const { difficulty, subject } = (await c.req.json()) as { difficulty: string; subject: string };
-	const question = `Give me 10 questions about ${subject}, all questions must be unique and the level should be ${difficulty}`;
+	const {
+		difficulty,
+		subject,
+		numOfQuestion = 5,
+	} = (await c.req.json()) as {
+		difficulty: string;
+		subject: string;
+		numOfQuestion: number;
+	};
+
+	const question = `Give me ${numOfQuestion} questions about ${subject}, all questions must be unique and the level should be ${difficulty}`;
 
 	const openai = createOpenAI({
 		apiKey: process.env.API_KEY,
