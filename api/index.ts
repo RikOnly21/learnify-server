@@ -138,29 +138,44 @@ app.post("/user/questions/start", async (c) => {
 		}),
 	});
 
-	const data = await prisma.rank.create({ data: { difficulty, subject, userId } });
-	return c.json({ ...object, questionId: data.id });
+	const isExist = await prisma.leaderboard.findFirst({ where: { subject, difficulty, userId } });
+	if (!isExist) {
+		const data = await prisma.leaderboard.create({ data: { difficulty, subject, userId } });
+		return c.json({ ...object, questionId: data.id });
+	}
+
+	return c.json({ ...object, questionId: isExist.id });
 });
 
 app.post("/user/questions/end", async (c) => {
 	const userId = c.var.userId!;
-	const { questionId, point, startDate, endDate } = (await c.req.json()) as {
+	const { questionId, points, startDate, endDate } = (await c.req.json()) as {
 		questionId: string;
-		point: number;
+		points: number;
 		startDate: number;
 		endDate: number;
 	};
 
-	const data = await prisma.rank.update({
+	const start = new Date(startDate);
+	const end = new Date(endDate);
+
+	const durationInMilliseconds = end.getTime() - start.getTime();
+	const durationInSeconds = durationInMilliseconds / 1000;
+
+	const existData = await prisma.leaderboard.findUnique({
 		where: { id: questionId, userId },
-		data: { endAt: new Date(endDate), startAt: new Date(startDate) },
 	});
 
-	const start = data.startAt!.getTime();
-	const end = data.endAt!.getTime();
-
-	const durationInMilliseconds = end - start;
-	const durationInSeconds = durationInMilliseconds / 1000;
+	if (
+		!existData ||
+		points > existData.points ||
+		(existData.duration && points === existData.points && durationInMilliseconds < existData.duration)
+	) {
+		await prisma.leaderboard.update({
+			where: { id: questionId, userId },
+			data: { endAt: end, startAt: start, points, duration: durationInMilliseconds },
+		});
+	}
 
 	return c.json({ duration: durationInSeconds });
 });
@@ -169,9 +184,17 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 	const userId = c.var.userId!;
 	const { difficulty, subject } = c.req.param();
 
-	const data = prisma.rank.findMany({
+	const data = await prisma.leaderboard.findMany({
 		where: { difficulty, subject },
+		orderBy: { points: "desc", duration: "asc" },
+		take: 10,
 	});
+
+	const user = await prisma.leaderboard.findUnique({
+		where: { userId_subject_difficulty: { userId, difficulty, subject } },
+	});
+
+	return c.json({ data, user });
 });
 
 export default handle(app);

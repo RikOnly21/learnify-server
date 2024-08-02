@@ -5,35 +5,37 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 enum Role {
-  USER
-  AI
+    USER
+    AI
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  userId    String
-  sessionId String?
-  content   String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
+    id        String   @id @default(uuid())
+    userId    String
+    sessionId String?
+    content   String
+    role      Role     @default(USER)
+    createdAt DateTime @default(now())
 }
 
-model Rank {
-  id         String    @id @default(uuid())
-  userId     String
-  subject    String
-  difficulty String
-  startAt    DateTime?
-  endAt      DateTime?
-  duration   Int
-  points     Decimal   @default(0)
+model Leaderboard {
+    id         String    @id @default(uuid())
+    userId     String
+    subject    String
+    difficulty String
+    startAt    DateTime?
+    endAt      DateTime?
+    duration   Int?
+    points     Float     @default(0)
+
+    @@unique([userId, subject, difficulty])
 }
