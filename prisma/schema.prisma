@@ -34,4 +34,6 @@ model Rank {
   difficulty String
   startAt    DateTime?
   endAt      DateTime?
+  duration   Int
+  points     Decimal   @default(0)
 }

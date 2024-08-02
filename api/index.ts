@@ -156,13 +156,22 @@ app.post("/user/questions/end", async (c) => {
 		data: { endAt: new Date(endDate), startAt: new Date(startDate) },
 	});
 
-	const start = data.startAt.getTime();
+	const start = data.startAt!.getTime();
 	const end = data.endAt!.getTime();
 
 	const durationInMilliseconds = end - start;
 	const durationInSeconds = durationInMilliseconds / 1000;
 
 	return c.json({ duration: durationInSeconds });
+});
+
+app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
+	const userId = c.var.userId!;
+	const { difficulty, subject } = c.req.param();
+
+	const data = prisma.rank.findMany({
+		where: { difficulty, subject },
+	});
 });
 
 export default handle(app);
