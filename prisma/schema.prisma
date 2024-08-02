@@ -25,11 +25,13 @@ model Message {
     content   String
     role      Role     @default(USER)
     createdAt DateTime @default(now())
+
+    User User @relation(fields: [userId], references: [id])
 }
 
 model Leaderboard {
     id         String    @id @default(uuid())
-    userId     String
+    userId     String    @unique
     subject    String
     difficulty String
     startAt    DateTime?
@@ -37,5 +39,20 @@ model Leaderboard {
     duration   Int?
     points     Float     @default(0)
 
+    User User @relation(fields: [userId], references: [id])
+
     @@unique([userId, subject, difficulty])
+}
+
+model User {
+    id       String  @id @default(uuid())
+    userId   String  @unique
+    name     String?
+    imageUrl String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    Leaderboard Leaderboard[]
+    Message     Message[]
 }
