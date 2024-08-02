@@ -187,6 +187,7 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 	const data = await prisma.leaderboard.findMany({
 		where: { difficulty, subject },
 		orderBy: { points: "desc", duration: "asc" },
+		select: { duration: true, points: true },
 		take: 10,
 	});
 
