@@ -26,7 +26,7 @@ model Message {
     role      Role     @default(USER)
     createdAt DateTime @default(now())
 
-    User User @relation(fields: [userId], references: [id])
+    User User @relation(fields: [userId], references: [userId])
 }
 
 model Leaderboard {
@@ -39,14 +39,13 @@ model Leaderboard {
     duration   Int?
     points     Float     @default(0)
 
-    User User @relation(fields: [userId], references: [id])
+    User User @relation(fields: [userId], references: [userId])
 
     @@unique([userId, subject, difficulty])
 }
 
 model User {
-    id       String  @id @default(uuid())
-    userId   String  @unique
+    userId   String  @id
     name     String?
     imageUrl String
 
