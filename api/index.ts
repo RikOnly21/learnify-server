@@ -18,7 +18,7 @@ if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
 
 type Env = {
 	Variables: {
-		userId: string | undefined;
+		userId: string;
 		openai: OpenAIProvider;
 		clerk: ClerkClient;
 	};
@@ -55,7 +55,7 @@ app.use("/user/*", async (c, next) => {
 });
 
 app.get("/user/messages", async (c) => {
-	const userId = c.var.userId!;
+	const userId = c.var.userId;
 
 	const user = await c.var.clerk.users.getUser(userId);
 	const messages = await prisma.message.findMany({ where: { userId } });
@@ -72,7 +72,7 @@ app.post("/user/voice", async (c) => {
 });
 
 app.post("/user/messages/create", async (c) => {
-	const userId = c.var.userId!;
+	const userId = c.var.userId;
 	const messages = (await c.req.json()) as { content: string; role: "user" | "assistant" }[];
 
 	const { text } = await generateText({ model: c.var.openai("gpt-4o"), messages });
@@ -89,7 +89,7 @@ app.post("/user/messages/create", async (c) => {
 });
 
 app.post("/user/questions/start", async (c) => {
-	const userId = c.var.userId!;
+	const userId = c.var.userId;
 	const {
 		difficulty,
 		subject,
@@ -129,7 +129,7 @@ app.post("/user/questions/start", async (c) => {
 });
 
 app.post("/user/questions/end", async (c) => {
-	const userId = c.var.userId!;
+	const userId = c.var.userId;
 	const { questionId, points, startDate, endDate } = (await c.req.json()) as {
 		questionId: string;
 		points: number;
@@ -162,7 +162,7 @@ app.post("/user/questions/end", async (c) => {
 });
 
 app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
-	const userId = c.var.userId!;
+	const userId = c.var.userId;
 	const { difficulty, subject } = c.req.param();
 
 	const data = await prisma.leaderboard.findMany({

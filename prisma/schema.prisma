@@ -31,7 +31,7 @@ model Message {
 
 model Leaderboard {
     id         String    @id @default(uuid())
-    userId     String    @unique
+    userId     String
     subject    String
     difficulty String
     startAt    DateTime?
