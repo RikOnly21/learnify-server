@@ -108,6 +108,7 @@ app.post("/user/questions/start", async (c) => {
 		temperature: 0.8,
 		presencePenalty: 0.02,
 		frequencyPenalty: 0.02,
+		mode: "json",
 		schema: z.object({
 			data: z.array(
 				z.object({
