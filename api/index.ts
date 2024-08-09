@@ -103,11 +103,12 @@ app.post("/user/questions/start", async (c) => {
 	const question = `Give me ${numOfQuestion} questions about ${subject}, all questions must be unique and the level should be ${difficulty}, then `;
 
 	const { object } = await generateObject({
-		model: c.var.openai("gpt-4o"),
+		model: c.var.openai("gpt-4o", { structuredOutputs: true }),
 		prompt: question,
 		temperature: 0.8,
 		presencePenalty: 0.02,
 		frequencyPenalty: 0.02,
+		mode: "tool",
 		schema: z.object({
 			data: z.array(
 				z.object({
