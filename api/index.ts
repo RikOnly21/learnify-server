@@ -3,7 +3,7 @@ import { Hono } from "hono";
 
 import { createClerkClient, type ClerkClient } from "@clerk/backend";
 
-import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
+import { createOpenAI, type OpenAIProvider, openai } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
 
@@ -100,10 +100,10 @@ app.post("/user/questions/start", async (c) => {
 		numOfQuestion: number;
 	};
 
-	const question = `Give me ${numOfQuestion} questions about ${subject}, all questions must be unique and the level should be ${difficulty}`;
+	const question = `Give me ${numOfQuestion} questions about ${subject}, all questions must be unique and the level should be ${difficulty}, then `;
 
 	const { object } = await generateObject({
-		model: c.var.openai("gpt-4o"),
+		model: c.var.openai("gpt-4o", { structuredOutputs: true }),
 		prompt: question,
 		temperature: 0.8,
 		presencePenalty: 0.02,
@@ -112,8 +112,9 @@ app.post("/user/questions/start", async (c) => {
 			data: z.array(
 				z.object({
 					question: z.string(),
-					options: z.string().array(),
-					answer: z.string(),
+					options: z.string().array().describe("List of options, contain 3 incorrect and 1 correct."),
+					answer: z.string().describe("Correct answer for the question."),
+					explain: z.string().describe("Explanation why that answer is correct"),
 				}),
 			),
 		}),
