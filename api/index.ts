@@ -181,7 +181,7 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 	return c.json({ data, user });
 });
 
-app.get("/user/voice", async (c) => {
+app.get("/user/listen", async (c) => {
 	const prompt = "Give me a random sentence, that is unique and interesting.";
 
 	const { object } = await generateObject({
