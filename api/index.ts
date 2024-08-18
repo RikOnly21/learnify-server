@@ -180,5 +180,22 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 
 	return c.json({ data, user });
 });
+app.get("/user/voice", async (c) => {
+	const prompt =
+		"Give me a random sentence, that is unique and interesting, not more than 5 words and easy to listen";
+
+	const { object } = await generateObject({
+		model: c.var.openai("gpt-4o"),
+		prompt,
+		temperature: 0.8,
+		presencePenalty: 0.02,
+		frequencyPenalty: 0.02,
+		schema: z.object({
+			text: z.string(),
+		}),
+	});
+
+	return c.json({ text: object.text });
+});
 
 export default handle(app);
