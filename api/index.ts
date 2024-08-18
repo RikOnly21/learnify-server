@@ -206,7 +206,7 @@ app.post("/user/fix", async (c) => {
 	const { sentence } = (await c.req.json()) as { sentence?: string };
 	if (!sentence || sentence.length === 0) return c.json({ error: { message: "Sentence is required" } }, 400);
 
-	const prompt = `Fix this sentence: "${sentence}". Also provide explanation why that sentence is wrong and how to fix it.`;
+	const prompt = `Fix this sentence: "${sentence}".`;
 
 	const { object } = await generateObject({
 		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
@@ -217,7 +217,9 @@ app.post("/user/fix", async (c) => {
 		schema: z.object({
 			orginal: z.string().describe("Original sentence"),
 			fixed: z.string().describe("Fixed sentence"),
-			explanation: z.string().describe("Explanation why that sentence is wrong and how to fix it"),
+			explanation: z
+				.string()
+				.describe("Explain that sentence is wrong and way to fix it, don't use markdown, just plain text"),
 		}),
 	});
 
