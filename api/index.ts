@@ -3,7 +3,7 @@ import { Hono } from "hono";
 
 import { createClerkClient, type ClerkClient } from "@clerk/backend";
 
-import { createOpenAI, type OpenAIProvider, openai } from "@ai-sdk/openai";
+import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
 
@@ -25,7 +25,6 @@ type Env = {
 };
 
 export const config = { api: { bodyParser: false } };
-
 const app = new Hono<Env>().basePath("/api");
 
 app.get("/", (c) => c.json({ message: "Server Working!!!" }));
@@ -43,7 +42,9 @@ app.use("/user/*", async (c, next) => {
 
 	const isUserExist = await prisma.user.findUnique({ where: { userId } });
 	if (!isUserExist) {
-		const user = await clerk.users.getUser(userId);
+		const user = await clerk.users.getUser(userId).catch(() => null);
+		if (!user || user.id !== userId) return c.json({ error: { message: "Unauthorized" } }, 401);
+
 		await prisma.user.create({ data: { name: user.username, userId, imageUrl: user.imageUrl } });
 	}
 
@@ -103,12 +104,11 @@ app.post("/user/questions/start", async (c) => {
 	const question = `Give me ${numOfQuestion} questions about ${subject}, all questions must be unique and the level should be ${difficulty}, then `;
 
 	const { object } = await generateObject({
-		model: c.var.openai("gpt-4o", { structuredOutputs: true }),
+		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
 		prompt: question,
 		temperature: 0.8,
 		presencePenalty: 0.02,
 		frequencyPenalty: 0.02,
-		mode: "tool",
 		schema: z.object({
 			data: z.array(
 				z.object({
@@ -180,22 +180,48 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 
 	return c.json({ data, user });
 });
+
 app.get("/user/voice", async (c) => {
-	const prompt =
-		"Give me a random sentence, that is unique and interesting, not more than 5 words and easy to listen";
+	const prompt = "Give me a random sentence, that is unique and interesting.";
 
 	const { object } = await generateObject({
-		model: c.var.openai("gpt-4o"),
+		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
 		prompt,
 		temperature: 0.8,
 		presencePenalty: 0.02,
 		frequencyPenalty: 0.02,
 		schema: z.object({
-			text: z.string(),
+			text: z
+				.string()
+				.describe(
+					"A unique sentence, Don't use any special characters/numbers/punctuation and no more than 5 words",
+				),
 		}),
 	});
 
 	return c.json({ text: object.text });
+});
+
+app.post("/user/fix", async (c) => {
+	const { sentence } = (await c.req.json()) as { sentence?: string };
+	if (!sentence || sentence.length === 0) return c.json({ error: { message: "Sentence is required" } }, 400);
+
+	const prompt = `Fix this sentence: "${sentence}". Also provide explanation why that sentence is wrong and how to fix it.`;
+
+	const { object } = await generateObject({
+		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
+		prompt,
+		temperature: 0.8,
+		presencePenalty: 0.02,
+		frequencyPenalty: 0.02,
+		schema: z.object({
+			orginal: z.string().describe("Original sentence"),
+			fixed: z.string().describe("Fixed sentence"),
+			explanation: z.string().describe("Explanation why that sentence is wrong and how to fix it"),
+		}),
+	});
+
+	return c.json({ ...object });
 });
 
 export default handle(app);
