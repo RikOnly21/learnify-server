@@ -1,6 +1,7 @@
 {
 	"name": "EducationServerNextjs",
 	"scripts": {
+		"dev": "bun --watch api/index.ts",
 		"start": "vercel dev",
 		"deploy": "vercel",
 		"postinstall": "prisma generate",

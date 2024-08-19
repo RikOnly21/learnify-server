@@ -34,10 +34,9 @@ app.use("/user/*", async (c, next) => {
 	if (!userId) return c.json({ error: { message: "Unauthorized" } }, 401);
 
 	const openai = createOpenAI({ apiKey: process.env.API_KEY, baseURL: process.env.API_URL });
-
 	const clerk = createClerkClient({
-		secretKey: process.env["CLERK_SECRET_KEY"],
-		publishableKey: process.env["CLERK_PUBLISHABLE_KEY"],
+		secretKey: process.env.CLERK_SECRET_KEY,
+		publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
 	});
 
 	const isUserExist = await prisma.user.findUnique({ where: { userId } });
@@ -206,8 +205,7 @@ app.post("/user/fix", async (c) => {
 	const { sentence } = (await c.req.json()) as { sentence?: string };
 	if (!sentence || sentence.length === 0) return c.json({ error: { message: "Sentence is required" } }, 400);
 
-	const prompt = `Fix this sentence: "${sentence}".`;
-
+	const prompt = `Fix this sentence: "${sentence}". Use markdown in the explanation, orginal and fixed sentence, underline the place that is wrong.`;
 	const { object } = await generateObject({
 		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
 		prompt,
@@ -219,9 +217,7 @@ app.post("/user/fix", async (c) => {
 			fixed: z.string().describe("Fixed sentence"),
 			explanation: z
 				.string()
-				.describe(
-					"Explain that sentence is wrong and way to fix it, don't use markdown, just plain text, it must be in vietnamese",
-				),
+				.describe("Explain that sentence is wrong and way to fix it, it must be in vietnamese"),
 		}),
 	});
 
