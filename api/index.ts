@@ -205,7 +205,10 @@ app.post("/user/fix", async (c) => {
 	const { sentence } = (await c.req.json()) as { sentence?: string };
 	if (!sentence || sentence.length === 0) return c.json({ error: { message: "Sentence is required" } }, 400);
 
-	const prompt = `Fix this sentence: "${sentence}". Use markdown in the explanation, orginal and fixed sentence, underline the place that is wrong.`;
+	const prompt =
+		`Fix this sentence: "${sentence}". Use markdown in the explanation, orginal and fixed sentence, underline the place that is wrong.` +
+		"If the sentence is correct, just return the sentence. Don't try to improve the sentence.";
+
 	const { object } = await generateObject({
 		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
 		prompt,
@@ -213,6 +216,7 @@ app.post("/user/fix", async (c) => {
 		presencePenalty: 0.02,
 		frequencyPenalty: 0.02,
 		schema: z.object({
+			isCorrect: z.boolean().describe("Is the sentence correct?"),
 			orginal: z.string().describe("Original sentence"),
 			fixed: z.string().describe("Fixed sentence"),
 			explanation: z
@@ -224,4 +228,6 @@ app.post("/user/fix", async (c) => {
 	return c.json({ ...object });
 });
 
-export default handle(app);
+const handler = process.env.NODE_ENV !== "production" ? app : handle(app);
+
+export default handler;
