@@ -219,7 +219,9 @@ app.post("/user/fix", async (c) => {
 			fixed: z.string().describe("Fixed sentence"),
 			explanation: z
 				.string()
-				.describe("Explain that sentence is wrong and way to fix it, don't use markdown, just plain text"),
+				.describe(
+					"Explain that sentence is wrong and way to fix it, don't use markdown, just plain text, it must be in vietnamese",
+				),
 		}),
 	});
 
