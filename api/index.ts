@@ -1,7 +1,11 @@
 import { handle } from "@hono/node-server/vercel";
 import { Hono } from "hono";
+import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
+import { trimTrailingSlash } from "hono/trailing-slash";
 
 import { createClerkClient, type ClerkClient } from "@clerk/backend";
+import { waitUntil } from "@vercel/functions";
 
 import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
@@ -26,6 +30,10 @@ type Env = {
 
 export const config = { api: { bodyParser: false } };
 const app = new Hono<Env>().basePath("/api");
+
+app.use(logger());
+app.use(secureHeaders());
+app.use(trimTrailingSlash());
 
 app.get("/", (c) => c.json({ message: "Server Working!!!" }));
 
@@ -65,8 +73,13 @@ app.get("/user/messages", async (c) => {
 
 app.post("/user/voice", async (c) => {
 	const messages = (await c.req.json()) as { content: string; role: "user" | "assistant" }[];
-
-	const { text } = await generateText({ model: c.var.openai("gpt-4o"), messages });
+	const { text } = await generateText({
+		model: c.var.openai("chatgpt-4o-latest"),
+		temperature: 0.8,
+		presencePenalty: 0.02,
+		frequencyPenalty: 0.02,
+		messages,
+	});
 
 	return c.json({ message: text });
 });
@@ -75,16 +88,31 @@ app.post("/user/messages/create", async (c) => {
 	const userId = c.var.userId;
 	const messages = (await c.req.json()) as { content: string; role: "user" | "assistant" }[];
 
-	const { text } = await generateText({ model: c.var.openai("gpt-4o"), messages });
+	const system =
+		"You're a learning assistant, your name is LearnifyAI. " +
+		"Your job is to help user learn english and answer any questions, fix their grammar and spelling mistakes but focus on the main point and question by user. " +
+		"Provide the answer in Vietnamese.";
 
-	const userMessage = messages.pop()!;
-	await prisma.message.createMany({
-		data: [
-			{ content: userMessage.content, role: "USER", userId },
-			{ content: text, role: "AI", userId },
-		],
+	const { text } = await generateText({
+		model: c.var.openai("gpt-4o"),
+		temperature: 0.8,
+		presencePenalty: 0.02,
+		frequencyPenalty: 0.02,
+		system,
+		messages,
 	});
 
+	const saveMessage = async () => {
+		const userMessage = messages.pop()!;
+		await prisma.message.createMany({
+			data: [
+				{ content: userMessage.content, role: "USER", userId },
+				{ content: text, role: "ASSISTANT", userId },
+			],
+		});
+	};
+
+	waitUntil(saveMessage());
 	return c.json({ message: text });
 });
 
@@ -166,12 +194,17 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 	const userId = c.var.userId;
 	const { difficulty, subject } = c.req.param();
 
-	const data = await prisma.leaderboard.findMany({
-		where: { difficulty, subject },
-		orderBy: [{ points: "desc" }, { duration: "asc" }],
-		select: { duration: true, points: true, User: { select: { imageUrl: true, name: true } } },
-		take: 10,
-	});
+	const data = (
+		await prisma.leaderboard.findMany({
+			where: { difficulty, subject },
+			orderBy: [{ points: "desc" }, { duration: "asc" }],
+			select: { duration: true, points: true, User: { select: { imageUrl: true, name: true, userId: true } } },
+			take: 10,
+		})
+	).map((item) => ({
+		...item,
+		User: { ...item.User, userId: item.User.userId === userId ? item.User.userId : undefined },
+	}));
 
 	const user = await prisma.leaderboard.findUnique({
 		where: { userId_subject_difficulty: { userId, difficulty, subject } },
@@ -181,7 +214,7 @@ app.get("/user/leaderboard/:subject/:difficulty", async (c) => {
 });
 
 app.get("/user/listen", async (c) => {
-	const prompt = "Give me a random sentence, that is unique and interesting.";
+	const prompt = "Give me a random sentence, that is unique and interesting and easy to listen.";
 
 	const { object } = await generateObject({
 		model: c.var.openai("gpt-4o-2024-08-06", { structuredOutputs: true }),
@@ -193,7 +226,7 @@ app.get("/user/listen", async (c) => {
 			text: z
 				.string()
 				.describe(
-					"A unique sentence, Don't use any special characters/numbers/punctuation and no more than 5 words",
+					"A unique sentence. Don't use any special characters/numbers/punctuation and less than 5 words",
 				),
 		}),
 	});
